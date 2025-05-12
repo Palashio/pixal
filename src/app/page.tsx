@@ -406,7 +406,7 @@ export default function Home() {
             <div className="h-[65vh] overflow-y-auto p-3 border border-gray-200 rounded-lg bg-gray-50 shadow-sm flex-grow">
               {generationLog.length === 0 ? (
                 <div className="text-center text-gray-500 py-6 text-base">
-                  Generation logs will appear here. Try creating an image!
+                  Generation logs will appear here. Try creating an ad!
                 </div>
               ) : (
                 <div className="space-y-4">
