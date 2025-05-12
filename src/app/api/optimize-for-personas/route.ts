@@ -4,7 +4,7 @@ import { toFile } from 'openai';
 
 export async function POST(request) {
   try {
-    const { originalImage, prompt, personas } = await request.json();
+    const { originalImage, prompt, personas, quality = 'medium' } = await request.json();
     
     if (!originalImage || !prompt || !personas || !Array.isArray(personas)) {
       return NextResponse.json(
@@ -29,6 +29,10 @@ export async function POST(request) {
     // Only process the first 3 personas to limit API calls
     const limitedPersonas = personas.slice(0, 3);
     
+    // Track cost for persona optimizations
+    let optimizationCost = 0;
+    const COST_PER_IMAGE_EDIT = 0.040; // $0.040 per 1024x1024 image edit
+    
     for (const persona of limitedPersonas) {
       // Create a persona-specific prompt
       console.log(persona)
@@ -45,10 +49,13 @@ export async function POST(request) {
           prompt: personaPrompt,
           n: 1,
           size: "1024x1024",
-          quality: "medium",
+          quality: quality,
         });
         
         const imageData = editResult.data[0].b64_json;
+        
+        // Add cost for this image edit
+        optimizationCost += COST_PER_IMAGE_EDIT;
         
         variations.push({
           personaId: persona.id,
@@ -69,7 +76,10 @@ export async function POST(request) {
       }
     }
 
-    return NextResponse.json({ variations });
+    return NextResponse.json({ 
+      variations,
+      optimizationCost: optimizationCost.toFixed(4)
+    });
     
   } catch (error) {
     console.error('Persona optimization error:', error);

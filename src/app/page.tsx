@@ -46,6 +46,10 @@ export default function Home() {
   const [editingPersona, setEditingPersona] = useState<{id: string, name: string, image: string, bio: string} | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
+  // Add state for image quality and max attempts
+  const [imageQuality, setImageQuality] = useState<'low' | 'medium'>('low');
+  const [maxAttempts, setMaxAttempts] = useState<number>(3);
+  
   // Reference for auto-scrolling
   const logEndRef = useRef<HTMLDivElement>(null);
 
@@ -111,7 +115,11 @@ export default function Home() {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ prompt: imageDescription }),
+          body: JSON.stringify({ 
+            prompt: imageDescription,
+            quality: imageQuality,
+            maxAttempts: maxAttempts
+          }),
         });
         
         if (!response.ok) {
@@ -171,6 +179,11 @@ export default function Home() {
                     }]);
                     break;
                     
+                  case 'costUpdate':
+                    // Update cost as it changes during the process
+                    setTotalCost(data.currentCost);
+                    break;
+                    
                   case 'complete':
                     setGenerationLog(prev => [...prev, {
                       type: 'result',
@@ -186,10 +199,8 @@ export default function Home() {
                       setTotalCost(data.totalCost);
                     }
                     
-                    // If the image was approved, generate persona-optimized variations
-                    if (data.isApproved) {
-                      await generatePersonaOptimizations(data.finalImage, imageDescription);
-                    }
+                    // Generate persona optimizations regardless of approval status
+                    await generatePersonaOptimizations(data.finalImage, imageDescription);
                     
                     setIsLoading(false);
                     break;
@@ -263,7 +274,8 @@ export default function Home() {
         body: JSON.stringify({ 
           originalImage: approvedImageData, 
           prompt: promptText,
-          personas: techPersonas.map(p => ({ id: p.id, name: p.name, bio: p.bio }))
+          personas: techPersonas.map(p => ({ id: p.id, name: p.name, bio: p.bio })),
+          quality: imageQuality
         }),
       });
       
@@ -272,6 +284,15 @@ export default function Home() {
       }
       
       const data = await response.json();
+      
+      // Update the total cost to include optimization costs
+      if (data.optimizationCost) {
+        setTotalCost(prevCost => {
+          const currentCost = parseFloat(prevCost);
+          const additionalCost = parseFloat(data.optimizationCost);
+          return (currentCost + additionalCost).toFixed(4);
+        });
+      }
       
       // Add the variations to the log - prevent duplicate message
       setGenerationLog(prev => [...prev, {
@@ -308,15 +329,46 @@ export default function Home() {
     setEditingPersona(null);
   };
 
+  // Add function to download image
+  const downloadImage = (imageData: string, filename: string) => {
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = imageData;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen w-full bg-white flex flex-col text-black">
       {/* Add global styles */}
       <style jsx global>{globalStyles}</style>
       
-      <div className="p-2 max-w-3xl mx-auto w-full flex flex-col h-screen text-black justify-start pt-24">
+      {/* Back to Main button */}
+      <a 
+        href="https://simulate.trybezel.com" 
+        className="absolute top-4 left-4 flex items-center text-sm font-medium text-gray-700 hover:text-purple-700 transition-colors"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Main
+      </a>
+      
+      <div className="p-2 max-w-6xl mx-auto w-full flex flex-col h-screen text-black justify-start pt-16">
+        
+        {/* Logo */}
+        <div className="flex justify-center mb-4">
+          <img 
+            src="/bezel.png" 
+            alt="Bezel Logo"
+            className="h-12 object-contain"
+          />
+        </div>
         
         {/* Tech Personas Display - More Compact */}
-        <div className="mb-2 flex overflow-x-auto gap-2 justify-center py-1">
+        <div className="mb-3 flex overflow-x-auto gap-3 justify-center py-2">
           {techPersonas.map(persona => (
             <div key={persona.id} 
                  className="flex-shrink-0 tooltip cursor-pointer" 
@@ -325,7 +377,7 @@ export default function Home() {
               <img 
                 src={persona.image} 
                 alt={persona.name} 
-                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 hover:border-purple-500 transition-all"
+                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 hover:border-purple-500 transition-all"
                 onError={(e) => {
                   e.currentTarget.src = '/next.svg';
                 }}
@@ -334,140 +386,233 @@ export default function Home() {
           ))}
         </div>
         
-        {/* Generation Log - More Compact */}
-        <div className="h-[50vh] overflow-y-auto mb-2 p-1 border border-gray-200 rounded-lg bg-gray-50">
-          {generationLog.length === 0 ? (
-            <div className="text-center text-gray-500 py-3 text-sm">
-              Generation logs will appear here. Try creating an image!
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {generationLog.map((entry, index) => (
-                <div key={index} className={`p-2 rounded-lg text-black ${
-                  entry.type === 'error' ? 'bg-red-50 border border-red-200' : 
-                  entry.type === 'result' ? 'bg-white border-2 border-blue-200 shadow-sm' : 
-                  entry.type === 'evaluation' ? 'bg-yellow-50 border border-yellow-200' :
-                  entry.type === 'personaVariations' ? 'bg-purple-50 border-2 border-purple-200 shadow-md' :
-                  'bg-white border border-gray-200'
-                }`}>
-                  <div className="flex items-center mb-1">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${
-                      entry.type === 'status' ? 'bg-blue-400' :
-                      entry.type === 'image' ? 'bg-green-400' :
-                      entry.type === 'evaluation' ? 'bg-yellow-400' :
-                      entry.type === 'result' ? 'bg-purple-400' :
-                      entry.type === 'personaVariations' ? 'bg-pink-400' :
-                      'bg-red-400'
-                    }`}></div>
-                    <div className="text-xs text-gray-500">
-                      {entry.type === 'status' ? 'Processing' :
-                       entry.type === 'image' ? `Generated Image (Step ${entry.step})` :
-                       entry.type === 'evaluation' ? `Evaluation (Step ${entry.step})` :
-                       entry.type === 'result' ? 'Final Result' :
-                       entry.type === 'personaVariations' ? 'Optimized Generation' :
-                       'Error'}
-                    </div>
-                    <div className="text-xs text-gray-400 ml-auto">
-                      {new Date(entry.timestamp).toLocaleTimeString()}
-                    </div>
-                  </div>
-                  
-                  {entry.message && (
-                    <div className={`text-xs mb-1 text-black ${
-                      entry.type === 'evaluation' ? 'font-medium p-1 bg-yellow-50 rounded border-l-2 border-yellow-300' : ''
+        {/* Main Content Area - Side by Side Layout */}
+        <div className="flex flex-col md:flex-row gap-4 mb-3 flex-grow">
+          {/* Left Column - Generation Log + Search */}
+          <div className="md:w-2/3 flex flex-col">
+            {/* Generation Log */}
+            <div className="h-[65vh] overflow-y-auto p-3 border border-gray-200 rounded-lg bg-gray-50 shadow-sm flex-grow">
+              {generationLog.length === 0 ? (
+                <div className="text-center text-gray-500 py-6 text-base">
+                  Generation logs will appear here. Try creating an image!
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {generationLog.map((entry, index) => (
+                    <div key={index} className={`p-3 rounded-lg text-black ${
+                      entry.type === 'error' ? 'bg-red-50 border border-red-200' : 
+                      entry.type === 'result' ? 'bg-white border-2 border-blue-200 shadow-sm' : 
+                      entry.type === 'evaluation' ? 'bg-yellow-50 border border-yellow-200' :
+                      entry.type === 'personaVariations' ? 'bg-purple-50 border-2 border-purple-200 shadow-md variations-glow' :
+                      'bg-white border border-gray-200'
                     }`}>
-                      {entry.type === 'evaluation' && <div className="text-xs font-bold mb-1 text-yellow-700">AI EVALUATION:</div>}
-                      {entry.type === 'evaluation' ? (
-                        <div className="whitespace-pre-line">
-                          {entry.message.replace(/(\d+\.)\s/g, '\n$1 ').trim()}
+                      <div className="flex items-center mb-2">
+                        <div className={`w-3 h-3 rounded-full mr-2 ${
+                          entry.type === 'status' ? 'bg-blue-400' :
+                          entry.type === 'image' ? 'bg-green-400' :
+                          entry.type === 'evaluation' ? 'bg-yellow-400' :
+                          entry.type === 'result' ? 'bg-purple-400' :
+                          entry.type === 'personaVariations' ? 'bg-pink-400' :
+                          'bg-red-400'
+                        }`}></div>
+                        <div className="text-sm text-gray-500">
+                          {entry.type === 'status' ? 'Processing' :
+                           entry.type === 'image' ? `Generated Image (Step ${entry.step})` :
+                           entry.type === 'evaluation' ? `Evaluation (Step ${entry.step})` :
+                           entry.type === 'result' ? 'Final Result' :
+                           entry.type === 'personaVariations' ? 'Optimized Generation' :
+                           'Error'}
                         </div>
-                      ) : entry.message}
-                    </div>
-                  )}
-                  
-                  {entry.image && (
-                    <div className="flex justify-center mt-1">
-                      <img 
-                        src={entry.image} 
-                        alt={`Image ${entry.step || ''}`} 
-                        className="rounded max-w-full max-h-48 object-contain"
-                      />
-                    </div>
-                  )}
-
-                  {entry.type === 'personaVariations' && entry.personaVariations && (
-                    <div className="mt-2">
-                      <div className="text-xs font-medium mb-2">Here are optimized variations for each persona:</div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {entry.personaVariations.map((variation, i) => {
-                          // Find the matching persona to get the avatar image
-                          const persona = techPersonas.find(p => p.id === variation.personaId);
-                          return (
-                            <div key={i} className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-fadeIn" 
-                                 style={{animationDelay: `${i * 150}ms`}}>
-                              <div className="relative">
-                                <img 
-                                  src={variation.image} 
-                                  alt={`Optimized for ${variation.personaName}`} 
-                                  className="w-full h-auto object-contain rounded-lg shadow-md border border-gray-200"
-                                  onError={(e) => {
-                                    e.currentTarget.src = '/next.svg';
-                                  }}
-                                />
-                                {/* Persona avatar overlay */}
-                                <div className="absolute -top-2 -left-2 w-8 h-8 rounded-full border-2 border-white shadow-md bg-white">
-                                  <img 
-                                    src={persona?.image || '/next.svg'} 
-                                    alt={variation.personaName}
-                                    className="w-full h-full rounded-full object-cover"
-                                  />
-                                </div>
-                              </div>
-                              <div className="text-xs font-medium text-center mt-1 truncate w-full">{variation.personaName}</div>
+                        <div className="text-sm text-gray-400 ml-auto">
+                          {new Date(entry.timestamp).toLocaleTimeString()}
+                        </div>
+                      </div>
+                      
+                      {entry.message && (
+                        <div className={`text-sm mb-2 text-black ${
+                          entry.type === 'evaluation' ? 'font-medium p-2 bg-yellow-50 rounded border-l-2 border-yellow-300' : ''
+                        }`}>
+                          {entry.type === 'evaluation' && <div className="text-sm font-bold mb-1 text-yellow-700">AI EVALUATION:</div>}
+                          {entry.type === 'evaluation' ? (
+                            <div className="whitespace-pre-line">
+                              {entry.message.replace(/(\d+\.)\s/g, '\n$1 ').trim()}
                             </div>
-                          );
-                        })}
+                          ) : entry.message}
+                        </div>
+                      )}
+                      
+                      {entry.image && (
+                        <div className="flex flex-col items-center mt-2">
+                          <div className="relative group">
+                            <img 
+                              src={entry.image} 
+                              alt={`Image ${entry.step || ''}`} 
+                              className="rounded max-w-full max-h-64 object-contain"
+                            />
+                            <button 
+                              onClick={() => downloadImage(entry.image!, `image-${entry.timestamp}${entry.step ? `-step${entry.step}` : ''}.png`)}
+                              className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Download image"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {entry.type === 'personaVariations' && entry.personaVariations && (
+                        <div className="mt-3">
+                          <div className="text-sm font-medium mb-3">Here are optimized variations for each persona:</div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            {entry.personaVariations.map((variation, i) => {
+                              // Find the matching persona to get the avatar image
+                              const persona = techPersonas.find(p => p.id === variation.personaId);
+                              return (
+                                <div key={i} className="flex flex-col items-center transform transition-all duration-500 hover:scale-105 animate-fadeIn" 
+                                     style={{animationDelay: `${i * 150}ms`}}>
+                                  <div className="relative group">
+                                    <img 
+                                      src={variation.image} 
+                                      alt={`Optimized for ${variation.personaName}`} 
+                                      className="w-full h-auto object-contain rounded-lg shadow-md border border-gray-200"
+                                      onError={(e) => {
+                                        e.currentTarget.src = '/next.svg';
+                                      }}
+                                    />
+                                    {/* Persona avatar overlay */}
+                                    <div className="absolute -top-3 -left-3 w-10 h-10 rounded-full border-2 border-white shadow-md bg-white">
+                                      <img 
+                                        src={persona?.image || '/next.svg'} 
+                                        alt={variation.personaName}
+                                        className="w-full h-full rounded-full object-cover"
+                                      />
+                                    </div>
+                                    {/* Download button */}
+                                    <button 
+                                      onClick={() => downloadImage(variation.image, `${variation.personaName.replace(/\s+/g, '-').toLowerCase()}-image.png`)}
+                                      className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                      title="Download image"
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                  <div className="text-sm font-medium text-center mt-2 truncate w-full">{variation.personaName}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <div ref={logEndRef} /> {/* Empty div for scrolling to end */}
+                </div>
+              )}
+            </div>
+            
+            {/* Prompt Search Box (with Controls removed) */}
+            <div className="pt-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Create an image"
+                  className="w-full p-2.5 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-black text-sm"
+                  onKeyDown={handleKeyDown}
+                  disabled={isLoading}
+                />
+                <button 
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-black ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                  {isLoading ? (
+                    <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              <div className="text-xs text-gray-500 mt-1 text-right">
+                Total cost: ${totalCost}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - How It Works */}
+          <div className="md:w-1/3">
+            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 shadow-sm">
+              <h2 className="text-center font-bold py-2 mb-3 text-purple-700">What is this?</h2>
+              
+              <div className="text-sm leading-relaxed">
+                <p className="prose prose-purple mb-4">
+                  This tool allows you to create a marketing image and watch it improve in real time. Each version is analyzed by an evaluator that gives feedback to optimize it for your target audience.
+                  <br />
+                  <br />
+                  At the end, variations of the image are created for each persona. <strong>Click on one of the personas to edit their bio.</strong>
+                </p>
+                
+                {/* Settings Section */}
+                <div className="border-t border-gray-200 pt-4 mt-4">
+                  <h3 className="font-semibold mb-3">Settings</h3>
+                  
+                  {/* Quality Toggle */}
+                  <div className="mb-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="font-medium text-sm">Image Quality:</label>
+                      <div className="relative inline-flex h-6 w-[104px] items-center rounded-full bg-gray-200">
+                        <button 
+                          className={`absolute left-0 inline-flex h-5 w-12 transform items-center justify-center rounded-full text-xs font-medium transition-transform ${
+                            imageQuality === 'low' 
+                              ? 'translate-x-0.5 bg-purple-600 text-purple-100' 
+                              : 'translate-x-[52px] bg-purple-600 text-purple-100'
+                          }`}
+                          style={{ transition: 'transform 0.2s' }}
+                        >
+                          {imageQuality.charAt(0).toUpperCase() + imageQuality.slice(1)}
+                        </button>
+                        <button 
+                          className="absolute left-0.5 z-10 h-5 w-12 rounded-full"
+                          onClick={() => setImageQuality('low')}
+                        />
+                        <button 
+                          className="absolute right-0.5 z-10 h-5 w-12 rounded-full" 
+                          onClick={() => setImageQuality('medium')}
+                        />
                       </div>
                     </div>
-                  )}
+                    <p className="text-xs text-gray-500">We omitted high for our own cost :)</p>
+                  </div>
+                  
+                  {/* Max Attempts Slider */}
+                  <div className="mb-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="font-medium text-sm">Max Attempts:</label>
+                      <span className="text-sm font-bold bg-purple-100 px-2 py-0.5 rounded-md">{maxAttempts}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="2"
+                      max="5"
+                      value={maxAttempts}
+                      onChange={(e) => setMaxAttempts(parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600 mb-2"
+                    />
+                    <p className="text-xs text-gray-500">Controls how many iterations the AI will attempt to create an ideal image before finalizing.</p>
+                  </div>
                 </div>
-              ))}
-              <div ref={logEndRef} /> {/* Empty div for scrolling to end */}
+              </div>
             </div>
-          )}
-        </div>
-        
-        {/* Prompt Search Box - Fixed at Bottom */}
-        <div className="sticky bottom-0 bg-white pt-1">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Create an image"
-              className="w-full p-1.5 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-black text-xs"
-              onKeyDown={handleKeyDown}
-              disabled={isLoading}
-            />
-            <button 
-              type="button"
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-black ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-              {isLoading ? (
-                <svg className="animate-spin h-3 w-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              )}
-            </button>
-          </div>
-          <div className="text-xs text-gray-500 mt-1 text-right">
-            Total cost: ${totalCost}
           </div>
         </div>
 

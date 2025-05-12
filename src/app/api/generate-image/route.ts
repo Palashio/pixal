@@ -8,7 +8,7 @@ import {
 } from './prompts';
 
 export async function POST(request) {
-  const { prompt } = await request.json();
+  const { prompt, quality = 'low', maxAttempts = 4 } = await request.json();
   
   if (!prompt) {
     return NextResponse.json(
@@ -44,11 +44,15 @@ export async function POST(request) {
           prompt: finalPrompt,
           n: 1,
           size: "1024x1024",
-          quality: "low",
+          quality: quality,
         });
         
-        // Calculate cost for image generation (1024x1024)
+        // Calculate cost for image generation (1024x1024) and send it immediately
         totalCost += 0.040; // $0.040 per 1024x1024 image
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+          type: 'costUpdate',
+          currentCost: totalCost.toFixed(4)
+        })}\n\n`));
         
         let imageData = result.data[0].b64_json;
         const usageData = result.usage
@@ -64,7 +68,7 @@ export async function POST(request) {
         
         let isApproved = false;
         let attempts = 0;
-        const MAX_ATTEMPTS = 4;
+        const MAX_ATTEMPTS = parseInt(maxAttempts);
         
         // Iterative improvement process
         while (!isApproved && attempts < MAX_ATTEMPTS) {
@@ -101,11 +105,17 @@ export async function POST(request) {
           const usageData = evaluation.usage
           console.log('usage data for evaluation', usageData)
           
-          // Calculate cost for GPT-4o evaluation
+          // Calculate cost for GPT-4o evaluation and send update immediately
           if (usageData) {
             const promptCost = (usageData.prompt_tokens / 1000) * 0.005;
             const completionCost = (usageData.completion_tokens / 1000) * 0.015;
             totalCost += promptCost + completionCost;
+            
+            // Send cost update immediately after evaluation
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'costUpdate',
+              currentCost: totalCost.toFixed(4)
+            })}\n\n`));
           }
           
           // Send evaluation result to frontend
@@ -118,13 +128,6 @@ export async function POST(request) {
           // Check if the image is approved
           if (evaluationText.includes("APPROVED")) {
             isApproved = true;
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
-              type: 'complete',
-              finalImage: `data:image/png;base64,${imageData}`,
-              isApproved: true,
-              message: 'Image approved! Process complete.',
-              totalCost: totalCost.toFixed(4)
-            })}\n\n`));
             break;
           }
           
@@ -151,11 +154,15 @@ export async function POST(request) {
               prompt: improvedPrompt,
               n: 1,
               size: "1024x1024",
-              quality: "medium",
+              quality: quality,
             });
             
-            // Calculate cost for image edit (1024x1024)
+            // Calculate cost for image edit and send update immediately
             totalCost += 0.040; // $0.040 per 1024x1024 image edit
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+              type: 'costUpdate',
+              currentCost: totalCost.toFixed(4)
+            })}\n\n`));
             
             imageData = editResult.data[0].b64_json;
             
