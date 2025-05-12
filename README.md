@@ -3,6 +3,8 @@
 Pixal is OpenAI Codex but for image generation. It allows you to generate images in an agentic loop, and optimize them 
 for a specific user persona at the end. 
 
+The repository is built with NextJS. 
+
 ### Installation
 
 1. Clone the repository:
