@@ -7,7 +7,7 @@ import {
   IMAGE_IMPROVEMENT_PROMPT 
 } from './prompts';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   const { prompt, quality = 'low', maxAttempts = 4 } = await request.json();
   
   if (!prompt) {
@@ -39,7 +39,7 @@ export async function POST(request) {
         })}\n\n`));
         console.log('prompt', prompt)
         // Generate the initial image
-        let result = await openai.images.generate({
+        const result = await openai.images.generate({
           model: "gpt-image-1",
           prompt: finalPrompt,
           n: 1,
@@ -54,7 +54,7 @@ export async function POST(request) {
           currentCost: totalCost.toFixed(4)
         })}\n\n`));
         
-        let imageData = result.data[0].b64_json;
+        let imageData = result.data?.[0]?.b64_json;
         const usageData = result.usage
         console.log('initial usage data', usageData)
         
@@ -126,7 +126,7 @@ export async function POST(request) {
           })}\n\n`));
           
           // Check if the image is approved
-          if (evaluationText.includes("APPROVED")) {
+          if (evaluationText && evaluationText.includes("APPROVED")) {
             isApproved = true;
             break;
           }
@@ -141,10 +141,10 @@ export async function POST(request) {
             // Create an improved prompt based on the evaluation
             const improvedPrompt = IMAGE_IMPROVEMENT_PROMPT
               .replace('{originalPrompt}', prompt)
-              .replace('{evaluationFeedback}', evaluationText);
+              .replace('{evaluationFeedback}', evaluationText || '');
             
             // Convert base64 to a File object for the edit API
-            const imageBuffer = Buffer.from(imageData, 'base64');
+            const imageBuffer = Buffer.from(imageData || '', 'base64');
             const imageFile = await toFile(imageBuffer, 'image.png', { type: 'image/png' });
             
             // Properly call the edit API with the image
@@ -164,7 +164,7 @@ export async function POST(request) {
               currentCost: totalCost.toFixed(4)
             })}\n\n`));
             
-            imageData = editResult.data[0].b64_json;
+            imageData = editResult.data?.[0]?.b64_json;
             
             // Send the improved image to the frontend
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
@@ -202,7 +202,9 @@ export async function POST(request) {
         console.error('Image generation error:', error);
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({
           type: 'error',
-          error: error.message || 'Failed to generate image'
+          error: error && typeof error === 'object' && 'message' in error 
+            ? error.message 
+            : 'Failed to generate image'
         })}\n\n`));
         controller.close();
       }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { toFile } from 'openai';
 
-export async function POST(request) {
+export async function POST(request: Request) {
   try {
     const { originalImage, prompt, personas, quality = 'medium' } = await request.json();
     
@@ -52,7 +52,7 @@ export async function POST(request) {
           quality: quality,
         });
         
-        const imageData = editResult.data[0].b64_json;
+        const imageData = editResult.data?.[0]?.b64_json;
         
         // Add cost for this image edit
         optimizationCost += COST_PER_IMAGE_EDIT;
@@ -71,7 +71,9 @@ export async function POST(request) {
           personaId: persona.id,
           personaName: persona.name,
           image: originalImage, // Use original as fallback
-          error: error.message || 'Failed to generate persona variation'
+          error: error && typeof error === 'object' && 'message' in error 
+            ? error.message 
+            : 'Failed to generate persona variation'
         });
       }
     }
@@ -84,7 +86,9 @@ export async function POST(request) {
   } catch (error) {
     console.error('Persona optimization error:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to optimize images for personas' },
+      { error: error && typeof error === 'object' && 'message' in error 
+          ? error.message 
+          : 'Failed to optimize images for personas' },
       { status: 500 }
     );
   }
