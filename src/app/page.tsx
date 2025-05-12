@@ -345,45 +345,57 @@ export default function Home() {
       {/* Add global styles */}
       <style jsx global>{globalStyles}</style>
       
-      {/* Back to Main button */}
+      {/* Replace Back to Main with Bezel logo */}
       <a 
         href="https://simulate.trybezel.com" 
-        className="absolute top-4 left-4 flex items-center text-sm font-medium text-gray-700 hover:text-purple-700 transition-colors"
+        className="absolute top-4 left-4 flex items-center"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
-        Back to Main
+        <img 
+          src="/bezel.png" 
+          alt="Bezel Logo"
+          className="h-8 object-contain"
+        />
       </a>
       
       <div className="p-2 max-w-6xl mx-auto w-full flex flex-col h-screen text-black justify-start pt-16">
         
-        {/* Logo */}
-        <div className="flex justify-center mb-4">
-          <img 
-            src="/bezel.png" 
-            alt="Bezel Logo"
-            className="h-12 object-contain"
-          />
-        </div>
+        {/* Logo in the middle has been removed */}
         
         {/* Tech Personas Display - More Compact */}
-        <div className="mb-3 flex overflow-x-auto gap-3 justify-center py-2">
-          {techPersonas.map(persona => (
-            <div key={persona.id} 
-                 className="flex-shrink-0 tooltip cursor-pointer" 
-                 title={persona.bio}
-                 onClick={() => handleEditPersona(persona)}>
-              <img 
-                src={persona.image} 
-                alt={persona.name} 
-                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 hover:border-purple-500 transition-all"
-                onError={(e) => {
-                  e.currentTarget.src = '/next.svg';
-                }}
-              />
-            </div>
-          ))}
+        <div className="mb-4">
+          <div className="flex flex-col items-center">
+            <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              YOUR CUSTOMER PERSONAS
+            </h2>
+          </div>
+          <div className="flex overflow-x-auto gap-4 justify-center py-2">
+            {techPersonas.map(persona => (
+              <div key={persona.id} 
+                   className="flex-shrink-0 flex flex-col items-center tooltip cursor-pointer group" 
+                   title={persona.bio}
+                   onClick={() => handleEditPersona(persona)}>
+                <div className="relative">
+                  <img 
+                    src={persona.image} 
+                    alt={persona.name} 
+                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-500 transition-all shadow-sm"
+                    onError={(e) => {
+                      e.currentTarget.src = '/next.svg';
+                    }}
+                  />
+                  <div className="absolute -bottom-1 -right-1 bg-purple-100 rounded-full p-1 border border-purple-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-purple-700" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </div>
+                </div>
+                <span className="mt-1 text-xs font-medium text-center max-w-[120px] truncate">{persona.name.split(' - ')[0]}</span>
+              </div>
+            ))}
+          </div>
         </div>
         
         {/* Main Content Area - Side by Side Layout */}
@@ -404,15 +416,16 @@ export default function Home() {
                       entry.type === 'result' ? 'bg-white border-2 border-blue-200 shadow-sm' : 
                       entry.type === 'evaluation' ? 'bg-yellow-50 border border-yellow-200' :
                       entry.type === 'personaVariations' ? 'bg-purple-50 border-2 border-purple-200 shadow-md variations-glow' :
+                      (entry.type === 'status' && entry.message?.includes('Generating persona-optimized variations')) ? 'bg-purple-50 border-2 border-purple-200 shadow-md variations-glow' :
                       'bg-white border border-gray-200'
                     }`}>
                       <div className="flex items-center mb-2">
                         <div className={`w-3 h-3 rounded-full mr-2 ${
                           entry.type === 'status' ? 'bg-blue-400' :
-                          entry.type === 'image' ? 'bg-green-400' :
+                          entry.type === 'image' ? 'bg-blue-400' :
                           entry.type === 'evaluation' ? 'bg-yellow-400' :
                           entry.type === 'result' ? 'bg-purple-400' :
-                          entry.type === 'personaVariations' ? 'bg-pink-400' :
+                          entry.type === 'personaVariations' ? 'bg-purple-400' :
                           'bg-red-400'
                         }`}></div>
                         <div className="text-sm text-gray-500">
@@ -429,10 +442,8 @@ export default function Home() {
                       </div>
                       
                       {entry.message && (
-                        <div className={`text-sm mb-2 text-black ${
-                          entry.type === 'evaluation' ? 'font-medium p-2 bg-yellow-50 rounded border-l-2 border-yellow-300' : ''
-                        }`}>
-                          {entry.type === 'evaluation' && <div className="text-sm font-bold mb-1 text-yellow-700">AI EVALUATION:</div>}
+                        <div className="text-sm mb-2 text-black">
+                          {entry.type === 'evaluation' && <div className="text-sm font-medium mb-1">AI Evaluation:</div>}
                           {entry.type === 'evaluation' ? (
                             <div className="whitespace-pre-line">
                               {entry.message.replace(/(\d+\.)\s/g, '\n$1 ').trim()}
@@ -521,7 +532,7 @@ export default function Home() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Create an image"
+                  placeholder="Generate an ad for Ridge Wallet. Include lots of people, a logo, and a discount code."
                   className="w-full p-2.5 border border-black rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-black text-sm"
                   onKeyDown={handleKeyDown}
                   disabled={isLoading}
@@ -556,7 +567,7 @@ export default function Home() {
               
               <div className="text-sm leading-relaxed">
                 <p className="prose prose-purple mb-4">
-                  This tool allows you to create a marketing image and watch it improve in real time. Each version is analyzed by an evaluator that gives feedback to optimize it for your target audience.
+                  This tool allows you to create ads and watch them improve in real time. Each version is analyzed by an evaluator that gives feedback to optimize it for your target audience.
                   <br />
                   <br />
                   At the end, variations of the image are created for each persona. <strong>Click on one of the personas to edit their bio.</strong>
