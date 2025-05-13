@@ -357,7 +357,7 @@ export default function Home() {
         />
       </a>
       
-      <div className="p-2 max-w-6xl mx-auto w-full flex flex-col h-screen text-black justify-start pt-16">
+      <div className="p-2 max-w-6xl mx-auto w-full flex flex-col flex-1 text-black justify-start pt-16">
         
         {/* Logo in the middle has been removed */}
         
@@ -668,6 +668,15 @@ export default function Home() {
           </div>
         )}
       </div>
+      
+      {/* Custom Personas Footer - Now visible without scrolling */}
+      <footer className="w-full py-3 bg-purple-50 border-t border-purple-100">
+        <div className="max-w-6xl mx-auto text-center px-4">
+          <p className="text-sm text-gray-700">
+            Interested in creating custom personas? <a href="https://calendly.com/palash-trybezel/30min" target="_blank" rel="noopener noreferrer" className="text-purple-600 font-medium hover:underline">Book a time here</a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bezel's Image Agent",
+  title: "Bezel's Ad Agent",
   description: "Created by Bezel",
 };
 
