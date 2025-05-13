@@ -47,7 +47,7 @@ export default function Home() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
   // Add state for image quality and max attempts
-  const [imageQuality, setImageQuality] = useState<'low' | 'medium'>('low');
+  const [imageQuality, setImageQuality] = useState<'low' | 'medium'>('medium');
   const [maxAttempts, setMaxAttempts] = useState<number>(3);
   
   // Reference for auto-scrolling
