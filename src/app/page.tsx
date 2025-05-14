@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import TechPersonas from '@/components/TechPersonas';
 
 // Add global animation styles
 const globalStyles = `
@@ -340,6 +341,12 @@ export default function Home() {
     document.body.removeChild(link);
   };
 
+  const handlePersonaUpdate = (updatedPersona: {id: string, name: string, image: string, bio: string}) => {
+    setTechPersonas(personas => personas.map(persona => 
+      persona.id === updatedPersona.id ? updatedPersona : persona
+    ));
+  };
+
   return (
     <div className="min-h-screen w-full bg-white flex flex-col text-black">
       {/* Add global styles */}
@@ -359,44 +366,11 @@ export default function Home() {
       
       <div className="p-2 max-w-6xl mx-auto w-full flex flex-col flex-1 text-black justify-start pt-16">
         
-        {/* Logo in the middle has been removed */}
-        
-        {/* Tech Personas Display - More Compact */}
-        <div className="mb-4">
-          <div className="flex flex-col items-center">
-            <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-              YOUR CUSTOMER PERSONAS
-            </h2>
-          </div>
-          <div className="flex overflow-x-auto gap-4 justify-center py-2">
-            {techPersonas.map(persona => (
-              <div key={persona.id} 
-                   className="flex-shrink-0 flex flex-col items-center tooltip cursor-pointer group" 
-                   title={persona.bio}
-                   onClick={() => handleEditPersona(persona)}>
-                <div className="relative">
-                  <img 
-                    src={persona.image} 
-                    alt={persona.name} 
-                    className="w-16 h-16 rounded-full object-cover border-2 border-gray-200 group-hover:border-purple-500 transition-all shadow-sm"
-                    onError={(e) => {
-                      e.currentTarget.src = '/next.svg';
-                    }}
-                  />
-                  <div className="absolute -bottom-1 -right-1 bg-purple-100 rounded-full p-1 border border-purple-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-purple-700" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                    </svg>
-                  </div>
-                </div>
-                <span className="mt-1 text-xs font-medium text-center max-w-[120px] truncate">{persona.name.split(' - ')[0]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Tech Personas Component */}
+        <TechPersonas 
+          personas={techPersonas}
+          onPersonaUpdate={handlePersonaUpdate}
+        />
         
         {/* Main Content Area - Side by Side Layout */}
         <div className="flex flex-col md:flex-row gap-4 mb-3 flex-grow">
