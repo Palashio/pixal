@@ -148,7 +148,12 @@ async function generateAdVariations(
 ): Promise<AdVariation[]> {
     // For each original ad element, generate a new version tailored to the persona
     const results = await Promise.all(imageAnalysis.elements.map(async (element: AdElement) => {
-        const prompt = `You are an expert marketer. Here is an ad element from an original ad:
+        const prompt = `You are an expert marketer.
+        - Rewrite this ad text to better resonate with the persona, keeping the type and intent, but improving it based on the persona's needs tailoring it towards the new product description.
+        - Return only the improved text. 
+        - You MUST keep the length of the text very similar to the original text.
+
+        Here is the ad element from an original ad:
         Type: ${element.type}
         Text: "${element.text}"
         Why it works: ${element.whyItWorks}
@@ -158,10 +163,7 @@ async function generateAdVariations(
         Persona Analysis:
         ${personaAnalysis.analysis}
 
-        Rewrite this ad element to better resonate with the persona, keeping the type and intent, but improving it based on the persona's needs tailoring it towards the new product description.
-        Return only the improved text. 
-        
-        Dont forget to keep the length of the text very similar to the original text.`;
+`;
 
         const response = await openai.chat.completions.create({
             model: "gpt-4",
