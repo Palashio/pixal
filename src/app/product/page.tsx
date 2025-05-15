@@ -98,7 +98,17 @@ export default function ProductPage() {
       if (selectedAd === 'upload' && uploadedAdImage) {
         adImagePayload = { uploadedAdImage };
       } else if (typeof selectedAd === 'number') {
-        adImagePayload = { adImagePath: `/ads/image${selectedAd + 1}.png` };
+        // Fetch the image and convert to base64
+        const imagePath = `/ads/image${selectedAd + 1}.png`;
+        const response = await fetch(imagePath);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        adImagePayload = { uploadedAdImage: base64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '') };
       }
 
       const response = await fetch('/api/variate', {
