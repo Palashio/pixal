@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import TechPersonas from '@/components/TechPersonas';
 import CopyVariationsModal from '@/components/CopyVariationsModal';
+import type { PersonaVariation } from '@/types/adCopy';
 
 // Pre-written product descriptions
 const PRE_WRITTEN_DESCRIPTIONS = [
@@ -39,7 +40,7 @@ export default function ProductPage() {
   const [selectedAd, setSelectedAd] = useState<number | 'upload' | null>(null);
   const [uploadedAdImage, setUploadedAdImage] = useState<string | null>(null);
   const [isVariationsModalOpen, setIsVariationsModalOpen] = useState(false);
-  const [variations, setVariations] = useState<any[]>([]);
+  const [variations, setVariations] = useState<PersonaVariation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch tech personas on component mount
@@ -131,6 +132,18 @@ export default function ProductPage() {
 
   return (
     <div className="min-h-screen w-full bg-white flex flex-col text-black">
+      {/* Bezel Logo Top Left */}
+      <a 
+        href="https://simulate.trybezel.com" 
+        className="absolute top-4 left-4 flex items-center"
+      >
+        <img 
+          src="/bezel.png" 
+          alt="Bezel Logo"
+          className="h-8 object-contain"
+        />
+      </a>
+
       {isLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="flex flex-col items-center">
@@ -229,7 +242,7 @@ export default function ProductPage() {
             Select your ad copy inspiration, or upload your own
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-gray-200">
-            {[1,2,3,4,5,6,7,8,9,10].map((num, idx) => (
+            {[1,2,3,4,5,6,7,8,9,10,11].map((num, idx) => (
               <button
                 key={idx}
                 type="button"
@@ -250,7 +263,9 @@ export default function ProductPage() {
                 <img src={uploadedAdImage} alt="Uploaded Ad" className="w-full h-full object-cover rounded-2xl" />
               ) : (
                 <>
-                  <svg className="h-16 w-16 text-purple-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                  <svg className="h-16 w-16 text-purple-400 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M16 10l-4-4m0 0l-4 4m4-4v12" />
+                  </svg>
                   <span className="text-xs text-purple-700 font-semibold">Upload Ad</span>
                 </>
               )}

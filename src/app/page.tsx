@@ -310,12 +310,6 @@ export default function Home() {
     }
   };
 
-  // Add function to handle opening the edit modal
-  const handleEditPersona = (persona: {id: string, name: string, image: string, bio: string}) => {
-    setEditingPersona(persona);
-    setIsEditModalOpen(true);
-  };
-
   // Add function to save edited persona
   const savePersonaBio = (newBio: string) => {
     if (!editingPersona) return;

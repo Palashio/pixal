@@ -7,48 +7,18 @@ interface Persona {
   bio: string;
 }
 
-interface PersonaVariation {
-  persona: Persona;
-  analysis: string;
-  variations: {
-    headlines: string[];
-    subheadlines: string[];
-    bodyCopies: string[];
-    guarantees: string[];
-    ctas: string[];
-  };
-}
-
-interface PersonaResponse {
-  success: boolean;
-  message: string;
-  results: PersonaVariation[];
-}
-
 interface TechPersonasProps {
   personas: Persona[];
   onPersonaUpdate: (updatedPersona: Persona) => void;
-  personaVariations?: PersonaResponse;
 }
 
-export default function TechPersonas({ personas, onPersonaUpdate, personaVariations }: TechPersonasProps) {
+export default function TechPersonas({ personas, onPersonaUpdate }: TechPersonasProps) {
   const [editingPersona, setEditingPersona] = useState<Persona | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isVariationsModalOpen, setIsVariationsModalOpen] = useState(false);
-  const [selectedVariation, setSelectedVariation] = useState<PersonaVariation | null>(null);
 
   const handleEditPersona = (persona: Persona) => {
     setEditingPersona(persona);
     setIsEditModalOpen(true);
-  };
-
-  const handleViewVariations = (persona: Persona) => {
-    if (!personaVariations?.results) return;
-    const variation = personaVariations.results.find(v => v.persona.id === persona.id);
-    if (variation) {
-      setSelectedVariation(variation);
-      setIsVariationsModalOpen(true);
-    }
   };
 
   const savePersonaBio = (newBio: string) => {
@@ -141,102 +111,6 @@ export default function TechPersonas({ personas, onPersonaUpdate, personaVariati
                 className="px-3 py-1 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
               >
                 Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Variations Modal */}
-      {isVariationsModalOpen && selectedVariation && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-3 mb-4">
-              <img 
-                src={selectedVariation.persona.image} 
-                alt={selectedVariation.persona.name} 
-                className="w-12 h-12 rounded-full object-cover border-2 border-purple-500"
-                onError={(e) => {
-                  e.currentTarget.src = '/next.svg';
-                }}
-              />
-              <h3 className="font-bold text-xl">{selectedVariation.persona.name}</h3>
-            </div>
-
-            {/* Analysis Section */}
-            <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
-              <h4 className="text-sm font-semibold text-purple-700 mb-2">Analysis</h4>
-              <p className="text-sm text-purple-800 whitespace-pre-line">{selectedVariation.analysis}</p>
-            </div>
-
-            <div className="space-y-6">
-              {/* Headlines */}
-              <div>
-                <h4 className="text-sm font-semibold text-purple-700 mb-2">Headlines</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedVariation.variations.headlines.map((headline, index) => (
-                    <div key={index} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-sm font-medium text-purple-900">{headline}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Subheadlines */}
-              <div>
-                <h4 className="text-sm font-semibold text-purple-700 mb-2">Subheadlines</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedVariation.variations.subheadlines.map((subheadline, index) => (
-                    <div key={index} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-sm text-purple-800">{subheadline}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Body Copies */}
-              <div>
-                <h4 className="text-sm font-semibold text-purple-700 mb-2">Body Copies</h4>
-                <div className="space-y-3">
-                  {selectedVariation.variations.bodyCopies.map((bodyCopy, index) => (
-                    <div key={index} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-sm text-purple-800">{bodyCopy}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Guarantees */}
-              <div>
-                <h4 className="text-sm font-semibold text-purple-700 mb-2">Guarantees</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {selectedVariation.variations.guarantees.map((guarantee, index) => (
-                    <div key={index} className="p-3 bg-purple-50 rounded-lg border border-purple-200">
-                      <p className="text-sm text-purple-800">{guarantee}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* CTAs */}
-              <div>
-                <h4 className="text-sm font-semibold text-purple-700 mb-2">Call-to-Actions</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  {selectedVariation.variations.ctas.map((cta, index) => (
-                    <div key={index} className="p-3 bg-purple-600 rounded-lg text-center">
-                      <p className="text-sm font-medium text-white">{cta}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button 
-                onClick={() => setIsVariationsModalOpen(false)} 
-                className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm hover:bg-purple-700 transition-colors"
-              >
-                Close
               </button>
             </div>
           </div>

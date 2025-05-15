@@ -1,24 +1,5 @@
 import { useState } from 'react';
-
-interface Persona {
-  id: string;
-  name: string;
-  image: string;
-  bio: string;
-}
-
-interface VariationElement {
-  id: string;
-  type: string;
-  before: string;
-  after: string;
-}
-
-interface PersonaVariation {
-  persona: Persona;
-  analysis: string;
-  variations: VariationElement[];
-}
+import type { PersonaVariation } from '@/types/adCopy';
 
 interface CopyVariationsModalProps {
   isOpen: boolean;
@@ -26,10 +7,6 @@ interface CopyVariationsModalProps {
   variations: PersonaVariation[];
   adImage?: string | null;
   productDescription?: string;
-}
-
-function getMaxRows(variations: VariationElement[]) {
-  return variations.length;
 }
 
 export default function CopyVariationsModal({ isOpen, onClose, variations, adImage, productDescription }: CopyVariationsModalProps) {
@@ -40,7 +17,6 @@ export default function CopyVariationsModal({ isOpen, onClose, variations, adIma
 
   const currentVariation = variations[selectedPersonaIndex];
   const elements = currentVariation.variations;
-  const maxRows = getMaxRows(elements);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
