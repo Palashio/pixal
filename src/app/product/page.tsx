@@ -98,7 +98,17 @@ export default function ProductPage() {
       if (selectedAd === 'upload' && uploadedAdImage) {
         adImagePayload = { uploadedAdImage };
       } else if (typeof selectedAd === 'number') {
-        adImagePayload = { adImagePath: `/ads/image${selectedAd + 1}.png` };
+        // Fetch the image and convert to base64
+        const imagePath = `/ads/image${selectedAd + 1}.png`;
+        const response = await fetch(imagePath);
+        const blob = await response.blob();
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        adImagePayload = { uploadedAdImage: base64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '') };
       }
 
       const response = await fetch('/api/variate', {
@@ -144,17 +154,6 @@ export default function ProductPage() {
         />
       </a>
 
-      {isLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80 backdrop-blur-sm">
-          <div className="flex flex-col items-center">
-            <svg className="animate-spin h-16 w-16 text-purple-600 mb-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-            </svg>
-            <span className="text-xl font-bold text-purple-700 animate-pulse">Generating Copy Variations, can take up to a minute...</span>
-          </div>
-        </div>
-      )}
       <div className="p-2 max-w-6xl mx-auto w-full flex flex-col flex-1 text-black justify-start pt-16">
         {/* Header Card: Title + Info Box */}
         <div className="mb-10 p-0 md:p-0 border border-gray-200 rounded-2xl bg-white shadow-md max-w-3xl mx-auto w-full">
@@ -282,14 +281,24 @@ export default function ProductPage() {
         </div>
 
         {/* Generate Button */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center pb-16">
           <button
             onClick={handleGenerateVariations}
-            className={`px-8 py-4 rounded-xl font-bold text-lg transition-colors duration-200 shadow-lg hover:shadow-xl
-              ${isReadyToGenerate ? 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}
-            disabled={!isReadyToGenerate}
+            className={`px-8 py-4 rounded-xl font-bold text-lg transition-colors duration-200 shadow-lg hover:shadow-xl flex items-center gap-3
+              ${isReadyToGenerate && !isLoading ? 'bg-purple-600 text-white hover:bg-purple-700 cursor-pointer' : 'bg-gray-300 text-gray-400 cursor-not-allowed'}`}
+            disabled={!isReadyToGenerate || isLoading}
           >
-            Generate Variations
+            {isLoading && (
+              <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+              </svg>
+            )}
+            {isLoading ? (
+              <span>Generating Copy Variations, can take up to a minute...</span>
+            ) : (
+              <span>Generate Variations</span>
+            )}
           </button>
         </div>
       </div>
