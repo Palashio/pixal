@@ -239,7 +239,7 @@ export async function POST(request: Request) {
                     { status: 400 }
                 );
             } else if (body.adImagePath != null && isString(body.adImagePath)) {
-                const base64Image = fs.readFileSync(`public/${body.adImagePath}`, "base64");
+                const base64Image = fs.readFileSync(`public${body.adImagePath}`, "base64");
                 if (!base64Image) {
                     return NextResponse.json(
                         { success: false, message: 'Ad image could not be loaded' },
