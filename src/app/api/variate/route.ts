@@ -162,7 +162,6 @@ async function generateAdVariations(
 
         Persona Analysis:
         ${personaAnalysis.analysis}
-
 `;
 
         const response = await openai.chat.completions.create({
